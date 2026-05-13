@@ -1,0 +1,903 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>พอเพียงสู้วิกฤต | E-Book</title>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700;800&family=Noto+Serif+Thai:wght@700;900&display=swap" rel="stylesheet">
+<style>
+:root{
+  --gold:#C9A84C;--gold-lt:#F0D080;--dark:#0D1117;--dark2:#161B22;--dark3:#1C2333;
+  --green:#2D6A4F;--green-lt:#52B788;--green-pale:#95D5B2;
+  --red:#C1121F;--cream:#FFF8E7;--muted:#9BA3A3;--blue:#1D3557;--blue-lt:#457B9D;
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+html,body{width:100%;height:100%;overflow:hidden;background:#0D1117;font-family:'Sarabun',sans-serif;color:#E8DCC8;}
+
+/* PROGRESS */
+#prog{position:fixed;top:0;left:0;height:3px;background:linear-gradient(90deg,var(--gold),var(--green-lt));z-index:999;transition:width .4s;}
+
+/* BOOK WRAPPER */
+#book{
+  position:fixed;top:0;left:0;right:0;
+  bottom:64px;
+  overflow:hidden;
+}
+
+/* PAGES */
+.page{
+  position:absolute;inset:0;
+  overflow-y:auto;-webkit-overflow-scrolling:touch;
+  opacity:0;pointer-events:none;
+  transform:translateX(100%);
+  transition:transform .4s cubic-bezier(.4,0,.2,1),opacity .4s;
+  padding-bottom:24px;
+}
+.page.active{opacity:1;pointer-events:all;transform:translateX(0);}
+.page.exit-left{opacity:0;pointer-events:none;transform:translateX(-100%);}
+
+/* NAV BAR */
+#nav{
+  position:fixed;bottom:0;left:0;right:0;height:64px;
+  background:rgba(13,17,23,.97);
+  border-top:1px solid rgba(201,168,76,.2);
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 20px;
+  padding-bottom:env(safe-area-inset-bottom);
+  z-index:998;
+}
+.nbtn{
+  background:none;border:1.5px solid rgba(201,168,76,.4);
+  color:var(--gold);padding:8px 20px;border-radius:30px;
+  font-family:'Sarabun',sans-serif;font-size:14px;cursor:pointer;
+  -webkit-appearance:none;
+}
+.nbtn:disabled{opacity:.25;}
+.nbtn:active{background:rgba(201,168,76,.15);}
+#pid{font-size:12px;color:var(--muted);}
+
+/* COVER */
+.cover-wrap{
+  min-height:100%;
+  background:linear-gradient(160deg,#06080c,#0a1f0a,#0d1117);
+  display:flex;flex-direction:column;align-items:center;
+  justify-content:flex-start;padding:0 0 32px;position:relative;overflow:hidden;
+}
+.cover-img{width:100%;height:280px;object-fit:cover;opacity:.45;display:block;}
+.cover-img-overlay{
+  position:absolute;top:0;left:0;right:0;height:280px;
+  background:linear-gradient(to bottom,rgba(6,8,12,.2),rgba(13,17,23,1));
+}
+.cover-body{padding:0 24px;position:relative;z-index:2;margin-top:-60px;text-align:center;}
+.cover-badge{font-size:10px;letter-spacing:4px;color:var(--gold);text-transform:uppercase;margin-bottom:12px;}
+.cover-title{font-family:'Noto Serif Thai',serif;font-size:clamp(26px,7vw,38px);font-weight:900;line-height:1.3;
+  background:linear-gradient(135deg,var(--gold-lt),var(--gold),#8B6914);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:10px;}
+.cover-sub{font-size:13px;color:var(--green-pale);line-height:1.7;max-width:300px;margin:0 auto 24px;}
+.stat-row{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-bottom:20px;}
+.stat-pill{background:rgba(255,255,255,.06);border:1px solid rgba(201,168,76,.2);border-radius:12px;padding:10px 14px;text-align:center;min-width:90px;}
+.stat-pill .n{font-size:18px;font-weight:800;color:var(--gold);}
+.stat-pill .l{font-size:10px;color:var(--muted);margin-top:2px;}
+.cover-tag{background:rgba(45,106,79,.2);border:1px solid rgba(82,183,136,.3);border-radius:30px;padding:6px 16px;font-size:12px;color:var(--green-pale);}
+
+/* HERO */
+.hero{position:relative;width:100%;height:220px;overflow:hidden;}
+.hero img{width:100%;height:100%;object-fit:cover;display:block;}
+.hero-overlay{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:flex-end;padding:20px 24px;
+  background:linear-gradient(to top,rgba(13,17,23,1) 30%,rgba(13,17,23,.4) 70%,transparent);}
+.chap{font-size:10px;letter-spacing:3px;color:var(--gold);text-transform:uppercase;margin-bottom:6px;}
+.ptitle{font-family:'Noto Serif Thai',serif;font-size:clamp(20px,5vw,28px);font-weight:900;line-height:1.3;color:#fff;margin-bottom:6px;}
+.plead{font-size:12px;color:var(--muted);}
+
+/* CONTENT */
+.pc{padding:20px 20px 16px;}
+
+/* CARDS */
+.card{background:var(--dark2);border:1px solid rgba(255,255,255,.07);border-radius:14px;padding:16px;margin-bottom:14px;position:relative;overflow:hidden;}
+.card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;}
+.card.gold::before{background:linear-gradient(90deg,var(--gold),transparent);}
+.card.green::before{background:linear-gradient(90deg,var(--green-lt),transparent);}
+.card.red::before{background:linear-gradient(90deg,var(--red),transparent);}
+.card.blue::before{background:linear-gradient(90deg,var(--blue-lt),transparent);}
+.card.purple::before{background:linear-gradient(90deg,#9B59B6,transparent);}
+.ci{font-size:26px;margin-bottom:8px;}
+.ct{font-size:15px;font-weight:700;color:var(--cream);margin-bottom:6px;}
+.cb{font-size:13px;color:var(--muted);line-height:1.8;}
+
+/* INLINE IMAGE CARD */
+.img-card{border-radius:14px;overflow:hidden;margin-bottom:14px;position:relative;}
+.img-card img{width:100%;height:160px;object-fit:cover;display:block;}
+.img-card-body{background:var(--dark2);padding:14px 16px;}
+.img-card-body .ct{margin-bottom:4px;}
+
+/* STATS GRID */
+.sgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px;}
+.sc{background:var(--dark3);border-radius:12px;padding:14px;text-align:center;border:1px solid rgba(255,255,255,.05);}
+.sn{font-size:22px;font-weight:800;line-height:1;}
+.su{font-size:10px;font-weight:400;}
+.sl{font-size:11px;color:var(--muted);margin-top:5px;line-height:1.5;}
+.ss{font-size:9px;color:rgba(155,163,163,.5);margin-top:3px;}
+
+/* HIGHLIGHT */
+.hl{background:linear-gradient(135deg,rgba(201,168,76,.1),rgba(201,168,76,.04));border:1px solid rgba(201,168,76,.25);border-radius:12px;padding:16px 18px;margin-bottom:14px;}
+.hl p{font-size:14px;line-height:1.8;color:var(--cream);}
+.hl strong{color:var(--gold);}
+
+/* BAR CHART */
+.bar-item{margin-bottom:12px;}
+.bar-lbl{display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px;}
+.bar-lbl .bn{color:var(--muted);}
+.bar-lbl .bv{color:var(--gold);font-weight:700;}
+.bar-track{height:8px;background:rgba(255,255,255,.06);border-radius:8px;overflow:hidden;}
+.bar-fill{height:100%;border-radius:8px;}
+
+/* STEPS */
+.steps{display:flex;flex-direction:column;gap:12px;}
+.step{display:flex;gap:12px;align-items:flex-start;background:var(--dark2);border-radius:12px;padding:14px;border:1px solid rgba(255,255,255,.05);}
+.snum{width:34px;height:34px;min-width:34px;background:linear-gradient(135deg,var(--gold),#8B6914);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;color:var(--dark);}
+.stitle{font-size:14px;font-weight:700;color:var(--cream);margin-bottom:4px;}
+.sbody{font-size:12px;color:var(--muted);line-height:1.7;}
+
+/* QUOTE */
+.qb{border-left:4px solid var(--gold);padding:14px 16px;margin:14px 0;background:rgba(201,168,76,.05);border-radius:0 10px 10px 0;}
+.qt{font-family:'Noto Serif Thai',serif;font-size:15px;line-height:1.8;color:var(--cream);font-style:italic;}
+.qs{font-size:11px;color:var(--gold);margin-top:6px;}
+
+/* PILLS */
+.pills{display:flex;flex-wrap:wrap;gap:7px;margin:10px 0;}
+.pill{padding:5px 12px;border-radius:30px;font-size:11px;font-weight:600;}
+.pill.gold{background:rgba(201,168,76,.12);color:var(--gold);border:1px solid rgba(201,168,76,.25);}
+.pill.green{background:rgba(82,183,136,.1);color:var(--green-pale);border:1px solid rgba(82,183,136,.22);}
+.pill.blue{background:rgba(69,123,157,.12);color:#6BB5FF;border:1px solid rgba(69,123,157,.25);}
+.pill.purple{background:rgba(155,89,182,.1);color:#D7AEFB;border:1px solid rgba(155,89,182,.22);}
+
+/* CHECK LIST */
+.ck{display:flex;flex-direction:column;gap:9px;}
+.cki{display:flex;gap:10px;align-items:flex-start;background:var(--dark2);border-radius:10px;padding:12px;}
+.cki .ico{font-size:16px;flex-shrink:0;}
+.cki .txt{font-size:13px;color:var(--muted);line-height:1.7;}
+.cki .txt strong{color:var(--cream);}
+
+/* COUNTRY CARD */
+.cc{display:flex;gap:12px;background:var(--dark3);border-radius:12px;padding:14px;margin-bottom:10px;border:1px solid rgba(255,255,255,.05);}
+.cflag{font-size:28px;flex-shrink:0;}
+.ctag{display:inline-block;background:rgba(82,183,136,.1);color:var(--green-pale);border-radius:20px;padding:2px 9px;font-size:10px;margin-bottom:4px;}
+.ctitle{font-size:14px;font-weight:700;color:var(--cream);margin-bottom:4px;}
+.cbody{font-size:12px;color:var(--muted);line-height:1.7;}
+
+/* TOC */
+.toc-item{display:flex;align-items:center;gap:12px;padding:13px 0;border-bottom:1px solid rgba(255,255,255,.05);cursor:pointer;}
+.toc-item:last-child{border-bottom:none;}
+.toc-n{font-size:10px;color:var(--gold);min-width:26px;font-weight:700;}
+.toc-t{font-size:13px;color:var(--cream);flex:1;}
+.toc-a{color:var(--muted);font-size:14px;}
+
+/* GRID PLANT */
+.plant-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px;}
+.plant-item{background:rgba(82,183,136,.07);border-radius:10px;padding:10px;text-align:center;}
+.plant-item .em{font-size:22px;}
+.plant-item .pn{font-size:10px;color:var(--muted);margin-top:4px;line-height:1.5;}
+
+/* FULL IMAGE */
+.full-img{width:100%;height:180px;object-fit:cover;display:block;border-radius:14px;margin-bottom:14px;}
+
+/* CONCLUSION */
+.conc{display:flex;flex-direction:column;align-items:center;padding:24px 20px;text-align:center;}
+.big-em{font-size:60px;margin-bottom:16px;}
+.ctitle2{font-family:'Noto Serif Thai',serif;font-size:24px;font-weight:900;
+  background:linear-gradient(135deg,var(--gold-lt),var(--gold));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:12px;line-height:1.4;}
+.cbody2{font-size:13px;color:var(--muted);line-height:1.9;max-width:320px;}
+
+/* DIVIDER */
+.div{height:1px;background:rgba(255,255,255,.06);margin:14px 0;}
+
+/* REF BOX */
+.ref{background:var(--dark3);border-radius:12px;padding:14px;margin-bottom:12px;}
+.ref-h{font-size:12px;font-weight:700;color:var(--gold);margin-bottom:8px;}
+.ref-i{font-size:11px;color:var(--muted);line-height:1.9;}
+
+/* SWIPE HINT */
+#hint{position:fixed;bottom:76px;left:50%;transform:translateX(-50%);
+  background:rgba(201,168,76,.15);border:1px solid rgba(201,168,76,.3);
+  border-radius:30px;padding:7px 16px;font-size:12px;color:var(--gold);
+  pointer-events:none;z-index:997;white-space:nowrap;}
+</style>
+</head>
+<body>
+
+<div id="prog" style="width:5%"></div>
+<div id="hint">← ปัดซ้าย-ขวา หรือกดปุ่มด้านล่าง →</div>
+
+<div id="book">
+
+<!-- P1: COVER -->
+<div class="page active" id="p1">
+  <div class="cover-wrap">
+    <img class="cover-img" src="https://images.unsplash.com/photo-1500382017468-9049fed747ef?w=800&q=80" alt="cover" loading="eager">
+    <div class="cover-img-overlay"></div>
+    <div class="cover-body">
+      <div class="cover-badge">E-Book · Gen 211 · ปรัชญาเศรษฐกิจพอเพียง</div>
+      <div class="cover-title">พอเพียงสู้วิกฤต<br>บทเรียนจากสงคราม<br>สู่การพึ่งตนเอง</div>
+      <div class="cover-sub">ประยุกต์หลักปรัชญาเศรษฐกิจพอเพียง<br>รับมือผลกระทบสงครามและวิกฤตโลก</div>
+      <div class="stat-row">
+        <div class="stat-pill"><div class="n">117M</div><div class="l">ผู้พลัดถิ่น</div></div>
+        <div class="stat-pill"><div class="n">+28%</div><div class="l">ราคาอาหารโลก</div></div>
+        <div class="stat-pill"><div class="n">$2.4T</div><div class="l">งบทหารโลก</div></div>
+      </div>
+      <div class="cover-tag">📖 20 หน้า · อ่านง่าย · ใช้ได้จริง</div>
+    </div>
+  </div>
+</div>
+
+<!-- P2: TOC -->
+<div class="page" id="p2">
+  <div class="hero">
+    <img src="https://images.unsplash.com/photo-1481627834876-b7833e8f5570?w=800&q=80" alt="toc" loading="lazy">
+    <div class="hero-overlay">
+      <span class="chap">สารบัญ</span>
+      <div class="ptitle">เนื้อหาภายในเล่ม</div>
+    </div>
+  </div>
+  <div class="pc">
+    <div class="toc-item" onclick="goTo(3)"><span class="toc-n">03</span><span class="toc-t">ที่มาและความสำคัญ</span><span class="toc-a">›</span></div>
+    <div class="toc-item" onclick="goTo(4)"><span class="toc-n">04</span><span class="toc-t">สงครามกับโลกยุคใหม่</span><span class="toc-a">›</span></div>
+    <div class="toc-item" onclick="goTo(5)"><span class="toc-n">05</span><span class="toc-t">ตัวเลขวิกฤตที่น่ากลัว</span><span class="toc-a">›</span></div>
+    <div class="toc-item" onclick="goTo(6)"><span class="toc-n">06</span><span class="toc-t">ผลกระทบต่อประเทศไทย</span><span class="toc-a">›</span></div>
+    <div class="toc-item" onclick="goTo(7)"><span class="toc-n">07</span><span class="toc-t">ปรัชญาเศรษฐกิจพอเพียงคืออะไร</span><span class="toc-a">›</span></div>
+    <div class="toc-item" onclick="goTo(8)"><span class="toc-n">08</span><span class="toc-t">ห่วงที่ 1: ความพอประมาณ</span><span class="toc-a">›</span></div>
+    <div class="toc-item" onclick="goTo(9)"><span class="toc-n">09</span><span class="toc-t">ห่วงที่ 2 & 3: มีเหตุผล & ภูมิคุ้มกัน</span><span class="toc-a">›</span></div>
+    <div class="toc-item" onclick="goTo(10)"><span class="toc-n">10</span><span class="toc-t">2 เงื่อนไข: ความรู้ & คุณธรรม</span><span class="toc-a">›</span></div>
+    <div class="toc-item" onclick="goTo(11)"><span class="toc-n">11</span><span class="toc-t">บทเรียนจากต่างประเทศ</span><span class="toc-a">›</span></div>
+    <div class="toc-item" onclick="goTo(12)"><span class="toc-n">12</span><span class="toc-t">พลังงาน: ลดพึ่งพา เพิ่มพลังงานสะอาด</span><span class="toc-a">›</span></div>
+    <div class="toc-item" onclick="goTo(13)"><span class="toc-n">13</span><span class="toc-t">ความมั่นคงทางอาหาร</span><span class="toc-a">›</span></div>
+    <div class="toc-item" onclick="goTo(14)"><span class="toc-n">14</span><span class="toc-t">การเงิน: เกราะป้องกันส่วนตัว</span><span class="toc-a">›</span></div>
+    <div class="toc-item" onclick="goTo(15)"><span class="toc-n">15</span><span class="toc-t">สังคม วัฒนธรรม จิตใจ</span><span class="toc-a">›</span></div>
+    <div class="toc-item" onclick="goTo(16)"><span class="toc-n">16</span><span class="toc-t">5 ขั้นตอนปฏิบัติสู้วิกฤต</span><span class="toc-a">›</span></div>
+    <div class="toc-item" onclick="goTo(17)"><span class="toc-n">17</span><span class="toc-t">แผนปฏิบัติการ 30 วัน</span><span class="toc-a">›</span></div>
+    <div class="toc-item" onclick="goTo(18)"><span class="toc-n">18</span><span class="toc-t">ประโยชน์ที่ได้รับ</span><span class="toc-a">›</span></div>
+    <div class="toc-item" onclick="goTo(19)"><span class="toc-n">19</span><span class="toc-t">สรุปและข้อเสนอแนะ</span><span class="toc-a">›</span></div>
+    <div class="toc-item" onclick="goTo(20)"><span class="toc-n">20</span><span class="toc-t">อ้างอิงและแหล่งข้อมูล</span><span class="toc-a">›</span></div>
+  </div>
+</div>
+
+<!-- P3: ที่มา -->
+<div class="page" id="p3">
+  <div class="hero">
+    <img src="https://images.unsplash.com/photo-1580128660010-fd027e1e587a?w=800&q=80" alt="war impact" loading="lazy">
+    <div class="hero-overlay">
+      <span class="chap">บทที่ 1 · ที่มาและความสำคัญ</span>
+      <div class="ptitle">ทำไมเราต้องรู้เรื่องนี้?</div>
+      <div class="plead">วิกฤตโลกไม่ได้ไกลตัวเราอีกต่อไป</div>
+    </div>
+  </div>
+  <div class="pc">
+    <div class="hl"><p>ในศตวรรษที่ 21 สงครามไม่ได้จำกัดอยู่แค่สนามรบ แต่<strong>ส่งผลโดยตรงถึงทุกบ้าน</strong> ทั้งราคาอาหาร ค่าพลังงาน และความไม่แน่นอนทางเศรษฐกิจ</p></div>
+    <div class="card gold">
+      <div class="ci">⚔️</div>
+      <div class="ct">สงครามรัสเซีย–ยูเครน</div>
+      <div class="cb">กระทบห่วงโซ่อุปทานข้าวสาลี น้ำมัน และปุ๋ยทั่วโลก ส่งผลต่อราคาอาหารในทุกประเทศ รวมถึงไทย</div>
+    </div>
+    <div class="card red">
+      <div class="ci">🕌</div>
+      <div class="ct">ความขัดแย้งตะวันออกกลาง</div>
+      <div class="cb">ส่งผลต่อราคาน้ำมันโลก เส้นทางการขนส่งสินค้า และความมั่นคงของพลังงานในภูมิภาค</div>
+    </div>
+    <img class="full-img" src="https://images.unsplash.com/photo-1620714223084-8fcacc2107b5?w=800&q=80" alt="global supply chain" loading="lazy">
+    <div class="qb">
+      <div class="qt">"ปัญหาของโลกคือปัญหาของเราทุกคน — ไม่มีประเทศใดหนีพ้นผลกระทบจากสงครามยุคใหม่"</div>
+      <div class="qs">— บทสรุปจากรายงาน FAO & World Bank, 2024</div>
+    </div>
+  </div>
+</div>
+
+<!-- P4: สงครามยุคใหม่ -->
+<div class="page" id="p4">
+  <div class="hero">
+    <img src="https://images.unsplash.com/photo-1569163139394-de4e5f43e5ca?w=800&q=80" alt="war modern" loading="lazy">
+    <div class="hero-overlay">
+      <span class="chap">บทที่ 1 · ผลกระทบ</span>
+      <div class="ptitle">สงครามในยุคใหม่<br>ทำลายทุกอย่าง</div>
+    </div>
+  </div>
+  <div class="pc">
+    <p style="font-size:13px;color:var(--muted);line-height:1.9;margin-bottom:16px;">สงครามยุคใหม่ไม่ใช่แค่การสู้รบ แต่เป็น <strong style="color:var(--cream)">สงครามเศรษฐกิจ</strong> ที่กระทบประชาชนทุกคนผ่านกลไกเหล่านี้</p>
+    <div class="img-card">
+      <img src="https://images.unsplash.com/photo-1509099863731-ef4bff19e808?w=800&q=80" alt="wheat field" loading="lazy">
+      <div class="img-card-body">
+        <div class="ct">🌾 ห่วงโซ่อาหารแตก</div>
+        <div class="cb">ยูเครนและรัสเซียผลิตข้าวสาลีกว่า 30% ของโลก เมื่อสงครามเกิดขึ้น การส่งออกหยุดชะงัก ราคาอาหารโลกพุ่งพรวด</div>
+      </div>
+    </div>
+    <div class="img-card">
+      <img src="https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=800&q=80" alt="oil refinery" loading="lazy">
+      <div class="img-card-body">
+        <div class="ct">⛽ พลังงานแพง–ขาดแคลน</div>
+        <div class="cb">การคว่ำบาตรน้ำมันและก๊าซรัสเซียทำให้ยุโรปและเอเชียต้องแข่งกันซื้อพลังงาน ต้นทุนทุกอย่างพุ่งสูง</div>
+      </div>
+    </div>
+    <div class="card blue">
+      <div class="ci">🚢</div>
+      <div class="ct">การขนส่งโลกหยุดชะงัก</div>
+      <div class="cb">เส้นทางทะเลแดงถูกคุกคาม ต้นทุนขนส่งพุ่ง 200–300% สินค้าล่าช้า ซัพพลายเชนพังทลาย</div>
+    </div>
+  </div>
+</div>
+
+<!-- P5: ตัวเลขวิกฤต -->
+<div class="page" id="p5">
+  <div class="hero">
+    <img src="https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=800&q=80" alt="data statistics" loading="lazy">
+    <div class="hero-overlay">
+      <span class="chap">บทที่ 1 · สถิติ</span>
+      <div class="ptitle">ตัวเลขที่ต้องรู้</div>
+      <div class="plead">ข้อมูลจากองค์กรระหว่างประเทศ 2023–2024</div>
+    </div>
+  </div>
+  <div class="pc">
+    <div class="sgrid">
+      <div class="sc"><div class="sn" style="color:#FF6B6B">117<span class="su">M</span></div><div class="sl">ผู้พลัดถิ่นจากสงครามทั่วโลก</div><div class="ss">UNHCR, 2024</div></div>
+      <div class="sc"><div class="sn" style="color:var(--gold)">+28<span class="su">%</span></div><div class="sl">ราคาอาหารโลกพุ่งสูงขึ้น</div><div class="ss">FAO, 2023</div></div>
+      <div class="sc"><div class="sn" style="color:var(--green-pale)">2.4<span class="su">T$</span></div><div class="sl">งบประมาณทหารโลก</div><div class="ss">SIPRI, 2024</div></div>
+      <div class="sc"><div class="sn" style="color:#6BB5FF">+40<span class="su">%</span></div><div class="sl">ราคาปุ๋ยที่พุ่งสูง กระทบเกษตรกร</div><div class="ss">World Bank, 2023</div></div>
+    </div>
+    <img class="full-img" src="https://images.unsplash.com/photo-1471864190281-a93a3070b6de?w=800&q=80" alt="global food price" loading="lazy" style="height:140px;">
+    <h3 style="font-size:14px;color:var(--cream);margin-bottom:12px;">ผลกระทบต่อราคาสินค้า</h3>
+    <div class="bar-item"><div class="bar-lbl"><span class="bn">🌾 ข้าวสาลี</span><span class="bv">+60%</span></div><div class="bar-track"><div class="bar-fill" style="width:60%;background:linear-gradient(90deg,#C9A84C,#F0D080);"></div></div></div>
+    <div class="bar-item"><div class="bar-lbl"><span class="bn">⛽ น้ำมัน</span><span class="bv">+45%</span></div><div class="bar-track"><div class="bar-fill" style="width:45%;background:linear-gradient(90deg,#FF6B6B,#FF9999);"></div></div></div>
+    <div class="bar-item"><div class="bar-lbl"><span class="bn">🧪 ปุ๋ย</span><span class="bv">+40%</span></div><div class="bar-track"><div class="bar-fill" style="width:40%;background:linear-gradient(90deg,#52B788,#95D5B2);"></div></div></div>
+    <div class="bar-item"><div class="bar-lbl"><span class="bn">🚢 ค่าขนส่ง</span><span class="bv">+280%</span></div><div class="bar-track"><div class="bar-fill" style="width:95%;background:linear-gradient(90deg,#457B9D,#6BB5FF);"></div></div></div>
+    <div class="bar-item"><div class="bar-lbl"><span class="bn">💊 ยาและเวชภัณฑ์</span><span class="bv">+22%</span></div><div class="bar-track"><div class="bar-fill" style="width:22%;background:linear-gradient(90deg,#9B59B6,#D7AEFB);"></div></div></div>
+  </div>
+</div>
+
+<!-- P6: ผลกระทบต่อไทย -->
+<div class="page" id="p6">
+  <div class="hero">
+    <img src="https://images.unsplash.com/photo-1508009603885-50cf7c579365?w=800&q=80" alt="Thailand" loading="lazy">
+    <div class="hero-overlay">
+      <span class="chap">บทที่ 1 · บริบทไทย</span>
+      <div class="ptitle">ประเทศไทย<br>ได้รับผลกระทบอย่างไร?</div>
+    </div>
+  </div>
+  <div class="pc">
+    <div class="hl"><p>ประเทศไทยพึ่งพา<strong>พลังงานนำเข้าถึง 57%</strong> ของความต้องการทั้งหมด ทำให้เราเสี่ยงต่อความผันผวนของราคาพลังงานโลกอย่างมาก</p></div>
+    <div class="img-card">
+      <img src="https://images.unsplash.com/photo-1586771107445-d3ca888129ff?w=800&q=80" alt="Thai farmer" loading="lazy">
+      <div class="img-card-body">
+        <div class="ct">🏭 ต้นทุนการผลิตพุ่ง</div>
+        <div class="cb">ราคาพลังงานและปุ๋ยที่แพงขึ้นทำให้ต้นทุนภาคเกษตรพุ่งสูง กระทบเกษตรกรรายย่อยโดยตรง</div>
+      </div>
+    </div>
+    <div class="card red">
+      <div class="ci">📉</div><div class="ct">เงินเฟ้อและค่าครองชีพ</div>
+      <div class="cb">ราคาสินค้าอุปโภคบริโภคพุ่งสูง กดดันผู้มีรายได้น้อย ความเหลื่อมล้ำถ่างกว้างขึ้น</div>
+    </div>
+    <div class="card blue">
+      <div class="ci">🛒</div><div class="ct">ห่วงโซ่สินค้าขาดแคลน</div>
+      <div class="cb">สินค้าบางประเภทขาดตลาด โดยเฉพาะชิ้นส่วนอิเล็กทรอนิกส์และวัตถุดิบอุตสาหกรรม</div>
+    </div>
+    <div style="background:rgba(193,18,31,.08);border:1px solid rgba(193,18,31,.22);border-radius:12px;padding:14px;">
+      <p style="font-size:13px;color:#FF9999;line-height:1.8;">⚠️ <strong style="color:#FF6B6B">ถ้าไม่แก้ไข:</strong> ความเสี่ยงจะสะสมและปะทุซ้ำทุกครั้งที่เกิดวิกฤตโลก ประชาชนแบกรับภาระมากขึ้นโดยไม่มีภูมิคุ้มกัน</p>
+    </div>
+  </div>
+</div>
+
+<!-- P7: ปรัชญา -->
+<div class="page" id="p7">
+  <div class="hero">
+    <img src="https://images.unsplash.com/photo-1465146344425-f00d5f5c8f07?w=800&q=80" alt="sufficiency philosophy nature" loading="lazy">
+    <div class="hero-overlay">
+      <span class="chap">บทที่ 2 · หลักปรัชญา</span>
+      <div class="ptitle">ปรัชญาเศรษฐกิจพอเพียง<br>คืออะไร?</div>
+    </div>
+  </div>
+  <div class="pc">
+    <div class="qb">
+      <div class="qt">"เศรษฐกิจพอเพียง เป็นปรัชญาที่ชี้แนะแนวทางการดำรงอยู่และปฏิบัติตนในทางที่ควรจะเป็น..."</div>
+      <div class="qs">— พระบาทสมเด็จพระปรมินทรมหาภูมิพลอดุลยเดช รัชกาลที่ 9</div>
+    </div>
+    <!-- Diagram visual -->
+    <div style="background:var(--dark2);border-radius:14px;padding:20px;margin-bottom:14px;">
+      <div style="text-align:center;margin-bottom:16px;font-size:13px;color:var(--gold);font-weight:700;">3 ห่วง 2 เงื่อนไข</div>
+      <div style="display:flex;flex-direction:column;gap:10px;">
+        <div style="background:rgba(201,168,76,.1);border:1px solid rgba(201,168,76,.3);border-radius:10px;padding:12px;display:flex;gap:12px;align-items:center;">
+          <span style="font-size:24px;">⚖️</span>
+          <div><div style="font-size:13px;font-weight:700;color:var(--gold);">ห่วงที่ 1: ความพอประมาณ</div><div style="font-size:11px;color:var(--muted);">ไม่มากเกินไป ไม่น้อยเกินไป เหมาะแก่ฐานะ</div></div>
+        </div>
+        <div style="background:rgba(82,183,136,.08);border:1px solid rgba(82,183,136,.25);border-radius:10px;padding:12px;display:flex;gap:12px;align-items:center;">
+          <span style="font-size:24px;">🧠</span>
+          <div><div style="font-size:13px;font-weight:700;color:var(--green-pale);">ห่วงที่ 2: ความมีเหตุผล</div><div style="font-size:11px;color:var(--muted);">ตัดสินใจบนฐานข้อมูล ไม่ตื่นตระหนก</div></div>
+        </div>
+        <div style="background:rgba(69,123,157,.1);border:1px solid rgba(69,123,157,.3);border-radius:10px;padding:12px;display:flex;gap:12px;align-items:center;">
+          <span style="font-size:24px;">🛡️</span>
+          <div><div style="font-size:13px;font-weight:700;color:#6BB5FF;">ห่วงที่ 3: การมีภูมิคุ้มกัน</div><div style="font-size:11px;color:var(--muted);">สร้างเกราะป้องกันล่วงหน้า รับมือความเสี่ยง</div></div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+          <div style="background:rgba(230,111,81,.08);border:1px solid rgba(230,111,81,.25);border-radius:10px;padding:12px;text-align:center;">
+            <div style="font-size:20px;">📚</div>
+            <div style="font-size:12px;font-weight:700;color:#E76F51;margin-top:4px;">เงื่อนไขความรู้</div>
+          </div>
+          <div style="background:rgba(155,89,182,.08);border:1px solid rgba(155,89,182,.25);border-radius:10px;padding:12px;text-align:center;">
+            <div style="font-size:20px;">🤝</div>
+            <div style="font-size:12px;font-weight:700;color:#D7AEFB;margin-top:4px;">เงื่อนไขคุณธรรม</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="hl"><p>หลักปรัชญาฯ เป็น <strong>ภูมิปัญญาไทย</strong> ที่พิสูจน์แล้วในวิกฤตการเงิน 2540 และวิกฤตโควิด 2563</p></div>
+  </div>
+</div>
+
+<!-- P8: พอประมาณ -->
+<div class="page" id="p8">
+  <div class="hero">
+    <img src="https://images.unsplash.com/photo-1501854140801-50d01698950b?w=800&q=80" alt="balance nature" loading="lazy">
+    <div class="hero-overlay">
+      <span class="chap">บทที่ 2 · ห่วงที่ 1</span>
+      <div class="ptitle" style="color:var(--gold-lt)">ความพอประมาณ</div>
+      <div class="plead">ไม่มาก ไม่น้อย เหมาะแก่ฐานะและบริบท</div>
+    </div>
+  </div>
+  <div class="pc">
+    <img class="full-img" src="https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?w=800&q=80" alt="simple living sufficiency" loading="lazy" style="height:150px;">
+    <div class="ck">
+      <div class="cki"><span class="ico">🔋</span><div class="txt"><strong>ลดการพึ่งพาพลังงานนำเข้า</strong><br>ไม่บริโภคพลังงานฟุ่มเฟือย กระจายแหล่งพลังงาน ไม่พึ่งแหล่งเดียว</div></div>
+      <div class="cki"><span class="ico">🛒</span><div class="txt"><strong>ไม่กักตุนสินค้าจนผู้อื่นขาดแคลน</strong><br>ซื้อตามความต้องการจริง ไม่ถูกกระแสข่าวลือพัดพา</div></div>
+      <div class="cki"><span class="ico">💰</span><div class="txt"><strong>กระจายแหล่งรายได้</strong><br>ไม่พึ่งรายได้ทางเดียว สร้างรายได้เสริมให้เหมาะฐานะตัวเอง</div></div>
+      <div class="cki"><span class="ico">🏠</span><div class="txt"><strong>ใช้ชีวิตในระดับที่พอดี</strong><br>ไม่ก่อหนี้เกินตัว ค่าใช้จ่ายสมดุลกับรายได้จริง</div></div>
+    </div>
+    <div class="pills" style="margin-top:14px;">
+      <span class="pill gold">🌾 ปลูกผักกินเอง</span>
+      <span class="pill gold">☀️ ใช้โซลาร์เซลล์</span>
+      <span class="pill gold">💡 ประหยัดพลังงาน</span>
+      <span class="pill gold">🚲 ลดใช้รถ</span>
+    </div>
+  </div>
+</div>
+
+<!-- P9: มีเหตุผล & ภูมิคุ้มกัน -->
+<div class="page" id="p9">
+  <div class="hero">
+    <img src="https://images.unsplash.com/photo-1518173946687-a4c8892bbd9f?w=800&q=80" alt="protection shield" loading="lazy">
+    <div class="hero-overlay">
+      <span class="chap">บทที่ 2 · ห่วงที่ 2 & 3</span>
+      <div class="ptitle">มีเหตุผล &<br>สร้างภูมิคุ้มกัน</div>
+    </div>
+  </div>
+  <div class="pc">
+    <div style="background:rgba(82,183,136,.07);border:1px solid rgba(82,183,136,.2);border-radius:12px;padding:14px;margin-bottom:14px;">
+      <div style="display:flex;gap:10px;align-items:center;margin-bottom:8px;">
+        <div style="width:28px;height:28px;background:rgba(82,183,136,.2);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:var(--green-pale);">2</div>
+        <div style="font-size:15px;font-weight:700;color:var(--green-pale);">ความมีเหตุผล</div>
+      </div>
+      <div style="font-size:13px;color:var(--muted);line-height:1.8;">ตัดสินใจบนฐานข้อมูลและสถิติจริง ไม่ตื่นตระหนกตามกระแสข่าวลือ วิเคราะห์ผลกระทบก่อนตัดสินใจลงทุนหรือปรับแผนชีวิต</div>
+      <div class="pills" style="margin-top:10px;">
+        <span class="pill green">📰 ติดตามข่าวจากแหล่งน่าเชื่อถือ</span>
+        <span class="pill green">🧮 วิเคราะห์ข้อมูลก่อนตัดสินใจ</span>
+      </div>
+    </div>
+    <div class="div"></div>
+    <div style="font-size:15px;font-weight:700;color:#6BB5FF;margin-bottom:12px;">🛡️ ห่วงที่ 3: การมีภูมิคุ้มกัน</div>
+    <div class="steps">
+      <div class="step">
+        <div class="snum">💰</div>
+        <div><div class="stitle">เงินสำรองฉุกเฉิน 3–6 เดือน</div><div class="sbody">มีเงินออมที่พร้อมใช้ทันทีในยามฉุกเฉิน ไม่ต้องก่อหนี้เพิ่มเมื่อวิกฤตมา</div></div>
+      </div>
+      <div class="step">
+        <div class="snum">🌱</div>
+        <div><div class="stitle">สำรองอาหารในครัวเรือน</div><div class="sbody">มีอาหารแห้งสำรองอย่างน้อย 1–3 เดือน และปลูกผักสวนครัวเพื่อลดต้นทุน</div></div>
+      </div>
+      <div class="step">
+        <div class="snum">☀️</div>
+        <div><div class="stitle">พลังงานทางเลือก</div><div class="sbody">ติดโซลาร์เซลล์หรือใช้พลังงานหมุนเวียน ลดพึ่งพาพลังงานนำเข้าที่ราคาผันผวน</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- P10: 2 เงื่อนไข -->
+<div class="page" id="p10">
+  <div class="hero">
+    <img src="https://images.unsplash.com/photo-1532012197267-da84d127e765?w=800&q=80" alt="knowledge books" loading="lazy">
+    <div class="hero-overlay">
+      <span class="chap">บทที่ 2 · 2 เงื่อนไข</span>
+      <div class="ptitle">ความรู้ & คุณธรรม<br>รากฐานที่แท้จริง</div>
+    </div>
+  </div>
+  <div class="pc">
+    <div class="card gold">
+      <div style="display:flex;gap:12px;align-items:flex-start;">
+        <div style="font-size:32px;">📚</div>
+        <div><div class="ct">เงื่อนไขความรู้</div><div class="cb">มีความเข้าใจในสถานการณ์โลก รู้เท่าทันข่าวสาร แสวงหาความรู้ด้านการเงิน การเกษตรสมัยใหม่ และพลังงานทดแทนอย่างสม่ำเสมอ</div></div>
+      </div>
+    </div>
+    <div class="ck" style="margin-bottom:16px;">
+      <div class="cki"><span class="ico">🌐</span><div class="txt"><strong>ติดตามสถานการณ์โลก</strong> — อ่านข่าวจากแหล่งที่เชื่อถือได้ ทั้งไทยและต่างประเทศ</div></div>
+      <div class="cki"><span class="ico">💹</span><div class="txt"><strong>ศึกษาการเงินส่วนตัว</strong> — เรียนรู้การบริหารเงิน การลงทุน และการสร้างภูมิคุ้มกันทางการเงิน</div></div>
+      <div class="cki"><span class="ico">🌾</span><div class="txt"><strong>เรียนรู้เกษตรสมัยใหม่</strong> — ปลูกผักอินทรีย์ ทำปุ๋ยหมัก ลดต้นทุนการผลิตอาหาร</div></div>
+    </div>
+    <img class="full-img" src="https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=800&q=80" alt="community sharing" loading="lazy" style="height:140px;">
+    <div class="card purple">
+      <div style="display:flex;gap:12px;align-items:flex-start;">
+        <div style="font-size:32px;">🤝</div>
+        <div><div class="ct" style="color:#D7AEFB;">เงื่อนไขคุณธรรม</div><div class="cb">ไม่ฉวยโอกาสขึ้นราคาสินค้า รู้จักแบ่งปันทรัพยากรในชุมชน ร่วมมือกันแก้ปัญหาโดยไม่ทิ้งใครไว้ข้างหลัง</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- P11: บทเรียนต่างประเทศ -->
+<div class="page" id="p11">
+  <div class="hero">
+    <img src="https://images.unsplash.com/photo-1476514525535-07fb3b4ae5f1?w=800&q=80" alt="world countries" loading="lazy">
+    <div class="hero-overlay">
+      <span class="chap">บทที่ 3 · กรณีศึกษา</span>
+      <div class="ptitle">โลกเขาทำอะไรกัน?<br>บทเรียนจากต่างแดน</div>
+    </div>
+  </div>
+  <div class="pc">
+    <div class="cc">
+      <div class="cflag">🇫🇮</div>
+      <div><span class="ctag">ด้านอาหาร</span><div class="ctitle">ฟินแลนด์</div><div class="cbody">สะสมอาหารสำรองเชิงกลยุทธ์ <strong style="color:var(--gold)">6 เดือน</strong> ทั้งระดับประเทศและครัวเรือน พลเมืองทุกคนได้รับการฝึกการเตรียมพร้อมรับวิกฤต</div></div>
+    </div>
+    <div class="cc">
+      <div class="cflag">🇩🇪</div>
+      <div><span class="ctag">ด้านพลังงาน</span><div class="ctitle">เยอรมนี</div><div class="cbody">เร่งพัฒนาพลังงานหมุนเวียน ตั้งเป้า <strong style="color:var(--gold)">80%</strong> ภายในปี 2030 หลังพึ่งพาก๊าซรัสเซียมากเกินไป</div></div>
+    </div>
+    <div class="cc">
+      <div class="cflag">🇯🇵</div>
+      <div><span class="ctag">ด้านสำรองทรัพยากร</span><div class="ctitle">ญี่ปุ่น</div><div class="cbody">สำรองน้ำมัน <strong style="color:var(--gold)">90 วัน</strong> และผลิตข้าวในประเทศเพื่อความมั่นคงทางอาหาร แม้ต้นทุนสูงกว่าการนำเข้า</div></div>
+    </div>
+    <div class="cc">
+      <div class="cflag">🇮🇱</div>
+      <div><span class="ctag">ด้านเกษตร</span><div class="ctitle">อิสราเอล</div><div class="cbody">พัฒนา AgriTech ในทะเลทราย ผลิตอาหารได้เองโดยไม่พึ่งนำเข้า แม้ภูมิประเทศไม่เอื้อ</div></div>
+    </div>
+    <div class="hl"><p>โครงงานนี้ต่อยอดด้วย <strong>"หลักปรัชญาเศรษฐกิจพอเพียง"</strong> ซึ่งออกแบบมาเพื่อสังคมไทยโดยเฉพาะ</p></div>
+  </div>
+</div>
+
+<!-- P12: พลังงาน -->
+<div class="page" id="p12">
+  <div class="hero">
+    <img src="https://images.unsplash.com/photo-1509391366360-2e959784a276?w=800&q=80" alt="solar energy" loading="lazy">
+    <div class="hero-overlay">
+      <span class="chap">บทที่ 4 · ประยุกต์ใช้ · พลังงาน</span>
+      <div class="ptitle">☀️ พลังงาน<br>ลดพึ่งพา เพิ่มอิสระ</div>
+    </div>
+  </div>
+  <div class="pc">
+    <div class="hl" style="background:rgba(82,183,136,.07);border-color:rgba(82,183,136,.22);">
+      <p>ไทยพึ่งพาพลังงานนำเข้า <strong style="color:var(--green-pale)">57%</strong> ของความต้องการทั้งหมด การลดพึ่งพาคือการสร้าง<strong style="color:var(--green-pale)">ภูมิคุ้มกัน</strong>ที่มองเห็นได้ชัดที่สุด</p>
+    </div>
+    <div class="steps">
+      <div class="step">
+        <div class="snum" style="background:linear-gradient(135deg,#F0D080,#C9A84C);">☀️</div>
+        <div><div class="stitle">ติดตั้งโซลาร์เซลล์</div><div class="sbody">แผง 3–5 kW ผลิตไฟฟ้าได้ 15–20 หน่วยต่อวัน คืนทุนใน 5–7 ปี ใช้งานได้ 25 ปี</div></div>
+      </div>
+      <div class="step">
+        <div class="snum" style="background:linear-gradient(135deg,#52B788,#2D6A4F);">🌬️</div>
+        <div><div class="stitle">สนับสนุนพลังงานชุมชน</div><div class="sbody">รวมกลุ่มชุมชนติดโซลาร์เซลล์ร่วมกัน แบ่งต้นทุน แบ่งผลประโยชน์ ลดค่าไฟทั้งชุมชน</div></div>
+      </div>
+      <div class="step">
+        <div class="snum" style="background:linear-gradient(135deg,#6BB5FF,#457B9D);">💡</div>
+        <div><div class="stitle">ประหยัดพลังงานจริงจัง</div><div class="sbody">เปลี่ยนหลอดไฟเป็น LED ปรับอุณหภูมิแอร์ให้เหมาะสม ลดค่าไฟ 20–30% ได้ทันที</div></div>
+      </div>
+    </div>
+    <div class="sgrid" style="margin-top:14px;">
+      <div class="sc"><div class="sn" style="color:var(--green-pale)">5-7<span class="su">ปี</span></div><div class="sl">ระยะคืนทุน โซลาร์เซลล์บ้าน</div></div>
+      <div class="sc"><div class="sn" style="color:var(--gold)">25<span class="su">ปี</span></div><div class="sl">อายุการใช้งานแผงโซลาร์</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- P13: อาหาร -->
+<div class="page" id="p13">
+  <div class="hero">
+    <img src="https://images.unsplash.com/photo-1416879595882-3373a0480b5b?w=800&q=80" alt="vegetable garden" loading="lazy">
+    <div class="hero-overlay">
+      <span class="chap">บทที่ 4 · ประยุกต์ใช้ · อาหาร</span>
+      <div class="ptitle">🌱 ความมั่นคงทางอาหาร<br>เริ่มที่บ้านคุณ</div>
+    </div>
+  </div>
+  <div class="pc">
+    <div class="img-card">
+      <img src="https://images.unsplash.com/photo-1466692476868-aef1dfb1e735?w=800&q=80" alt="home garden vegetables" loading="lazy">
+      <div class="img-card-body">
+        <div class="ct">🏡 ผักสวนครัวในบ้าน</div>
+        <div class="cb">ปลูกผักที่กินบ่อย เช่น กะเพรา โหระพา พริก มะเขือ ต้นทุน 500–1,000 บาท ลดค่าผักได้เดือนละ 300–500 บาท</div>
+      </div>
+    </div>
+    <div class="card green">
+      <div class="ci">🏘️</div><div class="ct">สวนชุมชน Community Garden</div>
+      <div class="cb">ชุมชนร่วมกันทำสวนในพื้นที่ว่างเปล่า แบ่งพื้นที่ปลูก แบ่งผลผลิต สร้างความสัมพันธ์ในชุมชนไปด้วย</div>
+    </div>
+    <div class="card gold">
+      <div class="ci">📦</div><div class="ct">สำรองอาหารอย่างถูกวิธี</div>
+      <div class="cb">สำรองอาหารแห้ง (ข้าวสาร ถั่ว บะหมี่ น้ำดื่ม) ไว้ 1–3 เดือน หมุนเวียนใช้เพื่อไม่ให้หมดอายุ</div>
+    </div>
+    <div style="background:var(--dark3);border-radius:12px;padding:14px;">
+      <div style="font-size:13px;color:var(--green-pale);font-weight:700;margin-bottom:10px;">🌿 ผักที่ปลูกง่าย เก็บเกี่ยวเร็ว</div>
+      <div class="plant-grid">
+        <div class="plant-item"><div class="em">🌿</div><div class="pn">กะเพรา<br>7-14 วัน</div></div>
+        <div class="plant-item"><div class="em">🥬</div><div class="pn">ผักบุ้ง<br>21 วัน</div></div>
+        <div class="plant-item"><div class="em">🌶️</div><div class="pn">พริก<br>60-90 วัน</div></div>
+        <div class="plant-item"><div class="em">🍅</div><div class="pn">มะเขือ<br>45-60 วัน</div></div>
+        <div class="plant-item"><div class="em">🌱</div><div class="pn">ต้นหอม<br>14-21 วัน</div></div>
+        <div class="plant-item"><div class="em">🫘</div><div class="pn">ถั่วฝักยาว<br>45-55 วัน</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- P14: การเงิน -->
+<div class="page" id="p14">
+  <div class="hero">
+    <img src="https://images.unsplash.com/photo-1579621970563-ebec7560ff3e?w=800&q=80" alt="financial planning" loading="lazy">
+    <div class="hero-overlay">
+      <span class="chap">บทที่ 4 · ประยุกต์ใช้ · การเงิน</span>
+      <div class="ptitle">💰 การเงิน<br>เกราะป้องกันส่วนตัว</div>
+    </div>
+  </div>
+  <div class="pc">
+    <div class="hl"><p>วิกฤตสงครามทำให้เศรษฐกิจผันผวน คนที่มี<strong>เงินสำรองฉุกเฉิน</strong>จะผ่านวิกฤตได้โดยไม่ต้องก่อหนี้เพิ่ม</p></div>
+    <div class="steps">
+      <div class="step">
+        <div class="snum">1</div>
+        <div><div class="stitle">สำรองฉุกเฉิน 3–6 เดือน</div><div class="sbody">คำนวณค่าใช้จ่ายต่อเดือน × 3–6 เก็บในบัญชีออมทรัพย์ที่ถอนได้ทันที ไม่นำไปลงทุนเสี่ยง</div></div>
+      </div>
+      <div class="step">
+        <div class="snum">2</div>
+        <div><div class="stitle">กระจายความเสี่ยงการลงทุน</div><div class="sbody">ไม่ฝากทุกอย่างไว้ที่เดียว กระจายในหุ้น พันธบัตร ทองคำ และเงินสด</div></div>
+      </div>
+      <div class="step">
+        <div class="snum">3</div>
+        <div><div class="stitle">ลดหนี้สินที่ไม่จำเป็น</div><div class="sbody">ชำระหนี้ดอกเบี้ยสูงก่อน เช่น บัตรเครดิต สินเชื่อส่วนบุคคล เพิ่มสภาพคล่อง</div></div>
+      </div>
+      <div class="step">
+        <div class="snum">4</div>
+        <div><div class="stitle">สร้างรายได้ทางที่สอง</div><div class="sbody">พัฒนาทักษะสร้างรายได้เสริม งานออนไลน์ ขายของ งานฝีมือ ไม่พึ่งรายได้ทางเดียว</div></div>
+      </div>
+    </div>
+    <div class="pills" style="margin-top:12px;">
+      <span class="pill gold">🪙 ทองคำ</span>
+      <span class="pill gold">📈 หุ้น-กองทุน</span>
+      <span class="pill gold">🏦 เงินฝาก</span>
+      <span class="pill gold">🏠 อสังหาฯ</span>
+    </div>
+  </div>
+</div>
+
+<!-- P15: สังคม -->
+<div class="page" id="p15">
+  <div class="hero">
+    <img src="https://images.unsplash.com/photo-1529156069898-49953e39b3ac?w=800&q=80" alt="community people" loading="lazy">
+    <div class="hero-overlay">
+      <span class="chap">บทที่ 4 · ประยุกต์ใช้ · สังคม</span>
+      <div class="ptitle">🤝 สังคม วัฒนธรรม<br>และจิตใจ</div>
+    </div>
+  </div>
+  <div class="pc">
+    <div class="card purple">
+      <div class="ci">🧠</div><div class="ct" style="color:#D7AEFB;">มีสติ ไม่ตื่นตระหนก</div>
+      <div class="cb">ในยามวิกฤต ความตื่นตระหนกทำให้ตัดสินใจผิดพลาด เช่น กักตุนสินค้า ขายสินทรัพย์หนีตลาด การมีสติช่วยให้รอดได้ดีกว่า</div>
+    </div>
+    <div class="img-card">
+      <img src="https://images.unsplash.com/photo-1511632765486-a01980e01a18?w=800&q=80" alt="community help" loading="lazy">
+      <div class="img-card-body">
+        <div class="ct">🏘️ สร้างเครือข่ายชุมชน</div>
+        <div class="cb">ชุมชนที่เชื่อมโยงกันแน่นแฟ้น แบ่งปันทรัพยากร ช่วยเหลือกัน จะผ่านวิกฤตได้ดีกว่าการต่อสู้คนเดียว</div>
+      </div>
+    </div>
+    <div class="card gold">
+      <div class="ci">🎋</div><div class="ct">ฟื้นฟูวัฒนธรรมพอเพียง</div>
+      <div class="cb">กลับสู่วิถีที่พอเพียง ชื่นชมความเรียบง่าย ลดการบริโภคเกินจำเป็น สร้างคุณค่าจากสิ่งที่มีอยู่</div>
+    </div>
+    <div class="qb">
+      <div class="qt">"คนเราถ้าพอในความต้องการ ก็มีความโลภน้อย เมื่อมีความโลภน้อย ก็เบียดเบียนคนอื่นน้อย"</div>
+      <div class="qs">— พระราชดำรัส รัชกาลที่ 9</div>
+    </div>
+  </div>
+</div>
+
+<!-- P16: 5 ขั้นตอน -->
+<div class="page" id="p16">
+  <div class="hero">
+    <img src="https://images.unsplash.com/photo-1484480974693-6ca0a78fb36b?w=800&q=80" alt="action plan steps" loading="lazy">
+    <div class="hero-overlay">
+      <span class="chap">บทที่ 5 · แนวทางปฏิบัติ</span>
+      <div class="ptitle">5 ขั้นตอน<br>สู้วิกฤตด้วยตัวเอง</div>
+    </div>
+  </div>
+  <div class="pc">
+    <div class="steps">
+      <div class="step">
+        <div class="snum">1</div>
+        <div><div class="stitle">🧠 รู้เท่าทัน — ติดตามสถานการณ์โลก</div><div class="sbody">ติดตามข่าวสารจากแหล่งที่เชื่อถือได้ เข้าใจว่าเหตุการณ์ใดส่งผลต่อชีวิตอย่างไร วิเคราะห์ก่อนตัดสินใจ</div></div>
+      </div>
+      <div class="step">
+        <div class="snum">2</div>
+        <div><div class="stitle">💰 สำรองฉุกเฉิน — สร้างเกราะทางการเงิน</div><div class="sbody">เริ่มออมเงินฉุกเฉินอย่างน้อย 3–6 เดือน ลดหนี้ไม่จำเป็น กระจายการลงทุน</div></div>
+      </div>
+      <div class="step">
+        <div class="snum">3</div>
+        <div><div class="stitle">🌱 ผลิตอาหาร — สร้างความมั่นคงทางอาหาร</div><div class="sbody">เริ่มปลูกผักสวนครัว สำรองอาหารแห้ง สนับสนุนเกษตรกรท้องถิ่น</div></div>
+      </div>
+      <div class="step">
+        <div class="snum">4</div>
+        <div><div class="stitle">☀️ พลังงานสะอาด — ลดพึ่งพาพลังงานนำเข้า</div><div class="sbody">ติดตั้งโซลาร์เซลล์ ประหยัดพลังงาน สนับสนุนนโยบายพลังงานหมุนเวียน</div></div>
+      </div>
+      <div class="step">
+        <div class="snum">5</div>
+        <div><div class="stitle">🤝 สร้างชุมชน — พลังของการร่วมมือ</div><div class="sbody">สร้างเครือข่ายชุมชน แบ่งปันทรัพยากร ทักษะ และข้อมูล เพื่อรับมือวิกฤตร่วมกัน</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- P17: แผน 30 วัน -->
+<div class="page" id="p17">
+  <div class="hero">
+    <img src="https://images.unsplash.com/photo-1506784365847-bbad939e9335?w=800&q=80" alt="calendar planning" loading="lazy">
+    <div class="hero-overlay">
+      <span class="chap">บทที่ 5 · แผนปฏิบัติการ</span>
+      <div class="ptitle">📅 แผนปฏิบัติการ 30 วัน<br>เริ่มเลยวันนี้!</div>
+    </div>
+  </div>
+  <div class="pc">
+    <div class="card green" style="margin-bottom:12px;">
+      <div style="font-size:13px;font-weight:700;color:var(--green-pale);margin-bottom:10px;">🗓️ สัปดาห์ที่ 1 (วันที่ 1–7) — ประเมินสถานะ</div>
+      <div class="ck">
+        <div class="cki" style="background:rgba(82,183,136,.07);"><span class="ico">✅</span><div class="txt">จดรายรับ-รายจ่ายทั้งหมดใน 1 เดือน</div></div>
+        <div class="cki" style="background:rgba(82,183,136,.07);"><span class="ico">✅</span><div class="txt">ตรวจสอบว่ามีเงินสำรองฉุกเฉินกี่เดือน</div></div>
+        <div class="cki" style="background:rgba(82,183,136,.07);"><span class="ico">✅</span><div class="txt">ติดตามข่าวสถานการณ์โลกจากแหล่งน่าเชื่อถือ</div></div>
+      </div>
+    </div>
+    <div class="card gold" style="margin-bottom:12px;">
+      <div style="font-size:13px;font-weight:700;color:var(--gold);margin-bottom:10px;">🗓️ สัปดาห์ที่ 2 (วันที่ 8–14) — เริ่มต้นผลิต</div>
+      <div class="ck">
+        <div class="cki" style="background:rgba(201,168,76,.05);"><span class="ico">🌱</span><div class="txt">ซื้อดิน กระถาง เมล็ดพันธุ์ผักง่ายๆ เช่น กะเพรา ต้นหอม</div></div>
+        <div class="cki" style="background:rgba(201,168,76,.05);"><span class="ico">📦</span><div class="txt">สำรองอาหารแห้ง ข้าวสาร ถั่ว บะหมี่ สำหรับ 2 สัปดาห์</div></div>
+      </div>
+    </div>
+    <div class="card blue">
+      <div style="font-size:13px;font-weight:700;color:#6BB5FF;margin-bottom:10px;">🗓️ สัปดาห์ที่ 3–4 (วันที่ 15–30) — สร้างระบบ</div>
+      <div class="ck">
+        <div class="cki" style="background:rgba(69,123,157,.07);"><span class="ico">💡</span><div class="txt">เปลี่ยนหลอดไฟเป็น LED ทั้งบ้าน ลดค่าไฟทันที</div></div>
+        <div class="cki" style="background:rgba(69,123,157,.07);"><span class="ico">🤝</span><div class="txt">ชวนเพื่อนบ้านแลกเปลี่ยนผักและทักษะ สร้างเครือข่ายเล็กๆ</div></div>
+        <div class="cki" style="background:rgba(69,123,157,.07);"><span class="ico">💰</span><div class="txt">เปิดบัญชีออมทรัพย์สำหรับเงินฉุกเฉินโดยเฉพาะ</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- P18: ประโยชน์ -->
+<div class="page" id="p18">
+  <div class="hero">
+    <img src="https://images.unsplash.com/photo-1552664730-d307ca884978?w=800&q=80" alt="benefits results" loading="lazy">
+    <div class="hero-overlay">
+      <span class="chap">บทที่ 6 · ประโยชน์</span>
+      <div class="ptitle">ผลที่ได้รับ<br>เมื่อลงมือทำ</div>
+    </div>
+  </div>
+  <div class="pc">
+    <div class="card gold"><div class="ci">🌍</div><div class="ct">ตระหนักรู้และรู้เท่าทันโลก</div><div class="cb">เข้าใจความเชื่อมโยงของวิกฤตโลกกับชีวิตประจำวัน เตรียมพร้อมล่วงหน้าได้</div></div>
+    <div class="card green"><div class="ci">🛡️</div><div class="ct">มีเกราะป้องกันที่เป็นรูปธรรม</div><div class="cb">เงินสำรองฉุกเฉิน อาหารสำรอง พลังงานทางเลือก ทำให้ผ่านวิกฤตได้โดยไม่พังพินาศ</div></div>
+    <div class="card blue"><div class="ci">🌱</div><div class="ct">ลดต้นทุนชีวิตได้จริง</div><div class="cb">ปลูกผักเอง ผลิตไฟฟ้าเอง ลดค่าใช้จ่ายรายเดือนได้หลักร้อยถึงหลักพัน สะสมทบต้นในระยะยาว</div></div>
+    <div class="card purple"><div class="ci">🤝</div><div class="ct" style="color:#D7AEFB;">ชุมชนเข้มแข็งขึ้น</div><div class="cb">การแบ่งปันและช่วยเหลือกันสร้างทุนทางสังคมที่มีค่ายิ่งกว่าเงิน โดยเฉพาะในยามวิกฤต</div></div>
+    <div class="hl"><p>ปรัชญาเศรษฐกิจพอเพียงไม่ใช่การ "ถอยหลัง" แต่คือ<strong>การสร้างอนาคตที่มั่นคง</strong>บนฐานที่แข็งแกร่ง</p></div>
+  </div>
+</div>
+
+<!-- P19: สรุป -->
+<div class="page" id="p19">
+  <div class="hero">
+    <img src="https://images.unsplash.com/photo-1470770841072-f978cf4d019e?w=800&q=80" alt="hope nature sunrise" loading="lazy">
+    <div class="hero-overlay">
+      <span class="chap">บทที่ 7 · สรุป</span>
+      <div class="ptitle">พอเพียง<br>คือภูมิคุ้มกันที่ดีที่สุด</div>
+    </div>
+  </div>
+  <div class="conc">
+    <div class="big-em">🌾</div>
+    <div class="ctitle2">เริ่มวันนี้<br>เพื่ออนาคตที่มั่นคง</div>
+    <div class="cbody2">สงครามและวิกฤตโลกจะยังคงเกิดขึ้นต่อไป แต่คนที่มีหลักปรัชญาเศรษฐกิจพอเพียงเป็นแนวทางจะไม่ตื่นตระหนก ไม่ล้มละลาย และยังสามารถช่วยเหลือผู้อื่นได้อีกด้วย</div>
+    <div class="sgrid" style="margin-top:20px;width:100%;">
+      <div class="sc"><div class="sn" style="color:var(--gold)">3</div><div class="sl">ห่วงสำคัญที่ต้องปฏิบัติ</div></div>
+      <div class="sc"><div class="sn" style="color:var(--green-pale)">2</div><div class="sl">เงื่อนไขรากฐานชีวิต</div></div>
+      <div class="sc"><div class="sn" style="color:#6BB5FF">5</div><div class="sl">ขั้นตอนเริ่มได้ทันที</div></div>
+      <div class="sc"><div class="sn" style="color:#FF9999">30</div><div class="sl">วันเห็นผลลัพธ์แรก</div></div>
+    </div>
+    <div class="qb" style="margin-top:20px;text-align:left;width:100%;">
+      <div class="qt">"การพัฒนาที่ยั่งยืนต้องเริ่มจากคนที่มีความพอเพียงในจิตใจ"</div>
+      <div class="qs">— หลักปรัชญาเศรษฐกิจพอเพียง รัชกาลที่ 9</div>
+    </div>
+    <div style="background:rgba(82,183,136,.07);border:1px solid rgba(82,183,136,.2);border-radius:12px;padding:14px;margin-top:14px;text-align:left;width:100%;">
+      <p style="font-size:13px;color:var(--green-pale);font-weight:700;margin-bottom:6px;">✅ ข้อเสนอแนะ</p>
+      <p style="font-size:13px;color:var(--muted);line-height:1.8;">เริ่มต้นจากสิ่งเล็กๆ ที่ทำได้วันนี้ ปลูกผัก 1 ต้น ออมเงิน 1 วัน ลดค่าไฟ 1 หน่วย แล้วค่อยๆ ขยาย ความพอเพียงไม่ใช่จุดหมาย แต่คือ <strong style="color:var(--green-pale)">วิถีการดำเนินชีวิต</strong></p>
+    </div>
+  </div>
+</div>
+
+<!-- P20: อ้างอิง -->
+<div class="page" id="p20">
+  <div class="hero">
+    <img src="https://images.unsplash.com/photo-1524995997946-a1c2e315a42f?w=800&q=80" alt="references books library" loading="lazy">
+    <div class="hero-overlay">
+      <span class="chap">บทที่ 8 · แหล่งข้อมูล</span>
+      <div class="ptitle">อ้างอิงและ<br>แหล่งข้อมูล</div>
+    </div>
+  </div>
+  <div class="pc">
+    <div class="ref">
+      <div class="ref-h">📚 องค์กรระหว่างประเทศ</div>
+      <div class="ref-i">• UNHCR. (2024). Global Trends: Forced Displacement. — ผู้พลัดถิ่น 117 ล้านคน<br>• FAO. (2023). The State of Food Security and Nutrition in the World. — ราคาอาหารพุ่ง 28%<br>• SIPRI. (2024). Military Expenditure Database. — งบทหาร 2.4 ล้านล้านดอลลาร์<br>• World Bank. (2023). Commodity Markets Outlook. — ราคาปุ๋ยพุ่ง 40%</div>
+    </div>
+    <div class="ref">
+      <div class="ref-h">🇹🇭 แหล่งข้อมูลไทย</div>
+      <div class="ref-i">• สำนักงาน สศช. (2566). หลักปรัชญาเศรษฐกิจพอเพียงและการประยุกต์ใช้<br>• กระทรวงพลังงาน. (2566). รายงานสถานการณ์พลังงานไทย — พึ่งพาพลังงานนำเข้า 57%<br>• มูลนิธิชัยพัฒนา. (2566). ปรัชญาเศรษฐกิจพอเพียง: หลักการและการประยุกต์ใช้</div>
+    </div>
+    <div class="ref">
+      <div class="ref-h">🌐 กรณีศึกษาต่างประเทศ</div>
+      <div class="ref-i">• National Emergency Supply Agency Finland. (2024). Strategic Stockpiling and Food Security.<br>• German Federal Ministry for Economic Affairs. (2023). Renewable Energy Progress Report.<br>• Ministry of Economy, Trade and Industry Japan. (2024). Energy Security Policy.<br>• Israel Innovation Authority. (2023). Agricultural Technology Report.</div>
+    </div>
+    <div style="text-align:center;padding:20px 0;">
+      <div style="font-size:36px;margin-bottom:10px;">🌾</div>
+      <div style="font-size:14px;color:var(--gold);font-weight:700;">พอเพียงสู้วิกฤต</div>
+      <div style="font-size:11px;color:var(--muted);margin-top:4px;">E-Book · Gen 211 · ปรัชญาเศรษฐกิจพอเพียง</div>
+      <div style="font-size:10px;color:rgba(155,163,163,.4);margin-top:6px;">จัดทำด้วยความตั้งใจเพื่อสังคมไทย 🇹🇭</div>
+    </div>
+  </div>
+</div>
+
+</div><!-- #book -->
+
+<div id="nav">
+  <button class="nbtn" id="btnP" onclick="prevPage()" disabled>← ก่อน</button>
+  <span id="pid">1 / 20</span>
+  <button class="nbtn" id="btnN" onclick="nextPage()">ถัดไป →</button>
+</div>
+
+<script>
+var cur = 1, tot = 20;
+
+function goTo(n){
+  if(n<1||n>tot) return;
+  var op = document.getElementById('p'+cur);
+  op.classList.remove('active');
+  op.classList.add('exit-left');
+  setTimeout(function(){ op.classList.remove('exit-left'); }, 450);
+  cur = n;
+  var np = document.getElementById('p'+cur);
+  np.scrollTop = 0;
+  np.classList.add('active');
+  document.getElementById('pid').textContent = cur+' / '+tot;
+  document.getElementById('prog').style.width = (cur/tot*100)+'%';
+  document.getElementById('btnP').disabled = cur===1;
+  document.getElementById('btnN').disabled = cur===tot;
+}
+
+function nextPage(){ if(cur<tot) goTo(cur+1); }
+function prevPage(){ if(cur>1) goTo(cur-1); }
+
+// Touch swipe
+var tx=0, ty=0;
+document.getElementById('book').addEventListener('touchstart',function(e){ tx=e.touches[0].clientX; ty=e.touches[0].clientY; },{passive:true});
+document.getElementById('book').addEventListener('touchend',function(e){
+  var dx=e.changedTouches[0].clientX-tx, dy=e.changedTouches[0].clientY-ty;
+  if(Math.abs(dx)>Math.abs(dy)&&Math.abs(dx)>50){ if(dx<0) nextPage(); else prevPage(); }
+},{passive:true});
+
+// Keyboard
+document.addEventListener('keydown',function(e){
+  if(e.key==='ArrowRight'||e.key==='ArrowDown') nextPage();
+  if(e.key==='ArrowLeft'||e.key==='ArrowUp') prevPage();
+});
+
+// Hide hint
+setTimeout(function(){ var h=document.getElementById('hint'); if(h) h.style.display='none'; },5000);
+</script>
+</body>
+</html>
